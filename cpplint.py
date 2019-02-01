@@ -188,7 +188,7 @@ Syntax: cpplint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit]
 
     linelength=digits
       This is the allowed line length for the project. The default value is
-      80 characters.
+      100 characters.
 
       Examples:
         --linelength=120
@@ -649,7 +649,7 @@ _quiet = False
 
 # The allowed line length of files.
 # This is set by --linelength flag.
-_line_length = 80
+_line_length = 100 
 
 try:
   xrange(1, 0)
@@ -4420,10 +4420,10 @@ def CheckAltTokens(filename, clean_lines, linenum, error):
   if line.find('/*') >= 0 or line.find('*/') >= 0:
     return
 
-  for match in _ALT_TOKEN_REPLACEMENT_PATTERN.finditer(line):
-    error(filename, linenum, 'readability/alt_tokens', 2,
-          'Use operator %s instead of %s' % (
-              _ALT_TOKEN_REPLACEMENT[match.group(1)], match.group(1)))
+  # for match in _ALT_TOKEN_REPLACEMENT_PATTERN.finditer(line):
+  #   error(filename, linenum, 'readability/alt_tokens', 2,
+  #         'Use operator %s instead of %s' % (
+  #             _ALT_TOKEN_REPLACEMENT[match.group(1)], match.group(1)))
 
 
 def GetLineWidth(line):
