@@ -32,10 +32,14 @@
 """Command Line interface integration test for cpplint.py."""
 
 import os
+import sys
 import subprocess
 import unittest
+import shutil
+import tempfile
+from testfixtures import compare
 
-BASE_CMD = 'python ' + os.path.abspath('./cpplint.py')
+BASE_CMD = sys.executable + ' ' + os.path.abspath('./cpplint.py ')
 
 def RunShellCommand(cmd, cwd='.'):
     """
@@ -53,6 +57,7 @@ def RunShellCommand(cmd, cwd='.'):
                             stdout=stdout_target,
                             stderr=stderr_target)
     out, err = proc.communicate()
+    # print(err) # to get the output at time of test
     return (proc.returncode, out, err)
 
 
@@ -64,33 +69,44 @@ class UsageTest(unittest.TestCase):
         self.assertEqual(b'', out)
         self.assertTrue(err.startswith(b'\nSyntax: cpplint'))
 
-
-class SignatureTests(unittest.TestCase):
+class TemporaryFolderClassSetup(object):
     """
     Regression tests: The test starts a filetreewalker scanning for files name *.def
     Such files are expected to have as first line the argument
     to a cpplint invocation from within the same directory, as second line the
-    expected status code, and all other lines the expected systemerr output (two blank
-    lines at end).
+    expected status code, then the line count of stdout lines,
+    then the stdout lines, and all other lines the expected
+    systemerr output (two blank lines at end).
     """
 
-    def testChromiumSample(self):
-        self.checkAllInFolder('./samples/chromium-sample', 1)
+    @classmethod
+    def setUpClass(cls):
+        """setup tmp folder for testing with samples and custom additions by subclasses"""
+        try:
+            cls._root = os.path.realpath(tempfile.mkdtemp())
+            shutil.copytree('samples', os.path.join(cls._root, 'samples'))
+            cls.prepare_directory(cls._root)
+        except Exception as e:
+            try:
+                cls.tearDownClass()
+            except Exception as e2:
+                pass
+            raise
 
-    def testVlcSample(self):
-        self.checkAllInFolder('./samples/vlc-sample', 1)
+    @classmethod
+    def tearDownClass(cls):
+        if (cls._root):
+            # pass
+            shutil.rmtree(cls._root)
 
-    def testSillySample(self):
-        self.checkAllInFolder('./samples/silly-sample', 2)
+    @classmethod
+    def prepare_directory(cls, root):
+        """Override in subclass to manipulate temporary samples root folder before tests"""
+        pass
 
-    def testBoostSample(self):
-        self.checkAllInFolder('./samples/boost-sample', 2)
-
-    def testProtobufSample(self):
-        self.checkAllInFolder('./samples/protobuf-sample', 1)
-
-    def testCodeliteSample(self):
-        self.checkAllInFolder('./samples/codelite-sample', 1)
+    def get_extra_command_args(self, cwd):
+        """Override in subclass to add arguments to command"""
+        return ''
 
     def checkAllInFolder(self, foldername, expectedDefs):
         # uncomment to show complete diff
@@ -100,32 +116,100 @@ class SignatureTests(unittest.TestCase):
             for f in fnames:
                 if f.endswith('.def'):
                     count += 1
-                    self.checkDef(os.path.join(dirpath, f))
+                    self._checkDef(os.path.join(dirpath, f))
         self.assertEqual(count, expectedDefs)
 
-    def checkDef(self, path):
+    def _checkDef(self, path):
+        """runs command and compares to expected output from def file"""
+        # self.maxDiff = None # to see full diff
         with open(path, 'rb') as filehandle:
             datalines = filehandle.readlines()
-            self.runAndCheck(os.path.dirname(path),
-                             datalines[0].decode('utf8').strip(),
-                             int(datalines[1]),
-                             b'',
-                             [line.decode('utf8').strip() for line in datalines[2:]])
+            stdoutLines = int(datalines[2])
+            self._runAndCheck(path,
+                              datalines[0].decode('utf8').strip(),
+                              int(datalines[1]),
+                              [line.decode('utf8').strip() for line in datalines[3:3 + stdoutLines]],
+                              [line.decode('utf8').strip() for line in datalines[3 + stdoutLines:]])
 
-    def runAndCheck(self, cwd, args, expectedStatus, expectedOut, expectedErr):
-        cmd = BASE_CMD + ' ' + args
+    def _runAndCheck(
+            self,
+            definition_file,
+            args,
+            expected_status,
+            expected_out,
+            expected_err
+    ):
+        rel_cwd = os.path.dirname(definition_file)
+        cmd = BASE_CMD + self.get_extra_command_args(rel_cwd) + args
+        cwd = os.path.join(self._root, rel_cwd)
         # command to reproduce, do not forget first two lines have special meaning
-        print("cd " + cwd + ";" + cmd + " 2> <filename>")
+        print("\ncd " + cwd + " && " + cmd + " 2> <filename>")
         (status, out, err) = RunShellCommand(cmd, cwd)
-        try:
-            self.assertEqual(expectedStatus, status)
-            self.assertEqual(expectedErr, err.decode('utf8').split('\n'))
-            self.assertEqual(expectedOut, out)
-        except AssertionError as e:
-            print('Failed check in ' + cwd)
-            print('for command: ' + cmd)
-            raise e
+        self.assertEqual(expected_status, status, 'bad command status %s' % status)
+        prefix = 'Failed check in %s comparing to %s for command: %s' % (cwd, definition_file, cmd)
+        compare('\n'.join(expected_err), err.decode('utf8'), prefix=prefix, show_whitespace=True)
+        compare('\n'.join(expected_out), out.decode('utf8'), prefix=prefix, show_whitespace=True)
 
+
+class NoRepoSignatureTests(TemporaryFolderClassSetup, unittest.TestCase):
+    """runs in a temporary folder (under /tmp in linux) without any .git/.hg/.svn file"""
+
+    def get_extra_command_args(self, cwd):
+        return (' --repository %s ' % self._root)
+
+    def testChromiumSample(self):
+        self.checkAllInFolder('./samples/chromium-sample', 1)
+
+    def testVlcSample(self):
+        self.checkAllInFolder('./samples/vlc-sample', 1)
+
+    def testSillySample(self):
+        self.checkAllInFolder('./samples/silly-sample', 4)
+
+    def testBoostSample(self):
+        self.checkAllInFolder('./samples/boost-sample', 4)
+
+    def testProtobufSample(self):
+        self.checkAllInFolder('./samples/protobuf-sample', 1)
+
+    def testCodeliteSample(self):
+        self.checkAllInFolder('./samples/codelite-sample', 1)
+
+    def testV8Sample(self):
+        self.checkAllInFolder('./samples/v8-sample', 1)
+
+class GitRepoSignatureTests(TemporaryFolderClassSetup, unittest.TestCase):
+    """runs in a temporary folder with .git file"""
+
+    @classmethod
+    def prepare_directory(cls, root):
+        with open(os.path.join(root, '.git'), 'a'):
+            pass
+
+    def testCodeliteSample(self):
+        self.checkAllInFolder('./samples/codelite-sample', 1)
+
+class MercurialRepoSignatureTests(TemporaryFolderClassSetup, unittest.TestCase):
+    """runs in a temporary folder with .hg file"""
+
+    @classmethod
+    def prepare_directory(cls, root):
+        with open(os.path.join(root, '.hg'), 'a'):
+            pass
+
+    def testCodeliteSample(self):
+        self.checkAllInFolder('./samples/codelite-sample', 1)
+
+class SvnRepoSignatureTests(TemporaryFolderClassSetup, unittest.TestCase):
+    """runs in a temporary folder with .svn file"""
+
+    @classmethod
+    def prepare_directory(cls, root):
+        with open(os.path.join(root, '.svn'), 'a'):
+            pass
+
+    def testCodeliteSample(self):
+        self.checkAllInFolder('./samples/codelite-sample', 1)
 
 if __name__ == '__main__':
-  unittest.main()
+    unittest.main()

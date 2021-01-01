@@ -1,38 +1,19 @@
 language: python
 
-sudo: false
-
 python:
+  - "3.8"
+  - "3.7"
   - "3.6"
   - "3.5"
-  - "3.4"
   - "2.7"
   - "pypy"
   - "pypy3"
-
-matrix:
-  include:
-    - python: 3.7
-      dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
-      sudo: required  # required for Python 3.7 (travis-ci/travis-ci#9069)
 
 install:
   - pip install --upgrade pip
   - pip install --upgrade setuptools
   - pip install -e .[dev]
+  - pip install tox-travis
 
 script:
-  - ./setup.py test
-
-jobs:
-  include:
-    - stage: lint
-      script: ./setup.py lint
-      name: "pylint"
-    - stage: lint
-      script: ./setup.py style
-      name: "flake8"
-
-stages:
-  - lint
-  - test
+  - tox

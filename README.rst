@@ -25,7 +25,16 @@ cpplint - static code checker for C++
 .. image:: https://img.shields.io/pypi/dm/cpplint.svg
     :target: https://pypi.python.org/pypi/cpplint
 
-This project continues the work of cpplint, a C++ style checker following `Google's C++ style guide <http://google.github.io/styleguide/cppguide.html>`_. It provides cpplint as a PyPI package and adds a few features and fixes. It is maintained as a fork of `google/styleguide <https://github.com/google/styleguide>`_ in hopes that it can be merged in the future.
+Cpplint is a command-line tool to check C/C++ files for style issues following `Google's C++ style guide <http://google.github.io/styleguide/cppguide.html>`_.
+Cpplint is developed and maintained by Google Inc. at `google/styleguide <https://github.com/google/styleguide>`_, also see the `wikipedia entry <http://en.wikipedia.org/wiki/Cpplint>`_
+
+While Google maintains cpplint, Google is not (very) responsive to issues and pull requests, this fork aims to be (somewhat) more open to add fixes to cpplint to enable fixes, when those fixes make cpplint usable in wider contexts.
+Also see discussion here https://github.com/google/styleguide/pull/528.
+
+
+Installation
+============
+
 
 To install cpplint from PyPI, run:
 
@@ -48,60 +57,26 @@ For full usage instructions, run:
 Changes
 -------
 
-The modifications in this branch are minor fixes and cosmetic changes:
+The modifications in this fork are minor fixes and cosmetic changes, such as:
 
-* more default extensions
 * python 3 compatibility
-* customizable file extensions with the --extensions and --headers arguments
+* more default file extensions
+* customizable file extensions with the --extensions argument
 * continuous integration on travis
 * support for recursive file discovery via the --recursive argument
 * support for excluding files via --exclude
 * JUnit XML output format
 * Overriding repository root auto-detection via --repository
 * Support ``#pragma once`` as an alternative to header include guards
-* Add quiet option to suppress non error-related output
+* ... and a few more (most of which are open PRs on upstream)
 
-Development
------------
 
-.. code-block:: bash
+Acknowledgements
+----------------
 
-    pip install --user -e .[dev]
-    ./setup.py lint
-    ./setup.py style
-    ./setup.py test
-    ./setup.py ci # all the above
+Thanks to Google Inc. for open-sourcing their in-house tool.
+Thanks to maintainers of the fork
 
-Maintaining
------------
-
-To release a new version:
-
-.. code-block:: bash
-
-    vi setup.py # increment the version
-    vi changelog.rst # log changes
-    git add setup.py changelog.rst
-    git commit -m "Releasing 0.0.6"
-    git tag 0.0.6
-    git push
-    git push --tags
-    python setup.py sdist register -r pypi
-    python setup.py sdist upload -r pypi
-
-To incorporate google's changes:
-
-.. code-block:: bash
-
-    git fetch google gh-pages
-    git checkout -b updates FETCH_HEAD
-    git rebase master
-    git push -u origin updates
-    # check travis
-    git push origin --delete updates
-
-    git rebase updates master
-    git branch -D updates
-    git push
-
-Thanks to `tkruse <https://github.com/tkruse>`_ for putting cpplint on PyPI and maintaining the PyPI version for many years!
+* `tkruse <https://github.com/tkruse>`_  
+* `mattyclarkson <https://github.com/mattyclarkson>`_
+* `theandrewdavis <https://github.com/theandrewdavis>`_

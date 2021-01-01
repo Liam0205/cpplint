@@ -1,5 +1,9 @@
 include/boost/math/*
 1
+3
+Done processing include/boost/math/octonion.hpp
+Total errors found: 2572
+
 include/boost/math/octonion.hpp:11:  #ifndef header guard has wrong style, please use: SAMPLES_BOOST_SAMPLE_INCLUDE_BOOST_MATH_OCTONION_HPP_  [build/header_guard] [5]
 include/boost/math/octonion.hpp:4250:  #endif line should be "#endif  // SAMPLES_BOOST_SAMPLE_INCLUDE_BOOST_MATH_OCTONION_HPP_"  [build/header_guard] [5]
 include/boost/math/octonion.hpp:18:  { should almost always be at the end of the previous line  [whitespace/braces] [4]
@@ -2572,6 +2576,4 @@ include/boost/math/octonion.hpp:4236:  { should almost always be at the end of t
 include/boost/math/octonion.hpp:4246:  Namespace should be terminated with "// namespace detail"  [readability/namespace] [5]
 include/boost/math/octonion.hpp:4247:  Namespace should be terminated with "// namespace math"  [readability/namespace] [5]
 include/boost/math/octonion.hpp:4248:  Namespace should be terminated with "// namespace boost"  [readability/namespace] [5]
-Done processing include/boost/math/octonion.hpp
-Total errors found: 2572
 
